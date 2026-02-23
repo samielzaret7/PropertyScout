@@ -1,0 +1,11 @@
+.venv/
+.env
+.streamlit/secrets.toml
+__pycache__/
+*.pyc
+*.pyo
+.DS_Store
+*.csv
+*.png
+*.jpg
+*.jpeg
