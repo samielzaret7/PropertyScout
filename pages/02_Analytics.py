@@ -8,7 +8,7 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 
-from utils.data_loader import load_base_types, load_properties, load_regions
+from utils.data_loader import load_base_types, load_max_price, load_properties, load_regions
 from utils.formatting import (
     LISTING_STATUS_LABELS,
     REGION_COLORS,
@@ -50,14 +50,17 @@ selected_types = st.sidebar.multiselect(
     placeholder="All types",
 )
 
-price_min, price_max = st.sidebar.slider(
-    "Price Range (USD)",
-    min_value=0,
-    max_value=10_000_000,
-    value=(0, 5_000_000),
-    step=25_000,
-    format="$%d",
-)
+_price_ceiling = load_max_price()
+st.sidebar.markdown("**Price Range (USD)**")
+_pcol1, _pcol2 = st.sidebar.columns(2)
+with _pcol1:
+    price_min = _pcol1.number_input(
+        "Min ($)", min_value=0, max_value=_price_ceiling, value=0, step=5_000
+    )
+with _pcol2:
+    price_max = _pcol2.number_input(
+        "Max ($)", min_value=0, max_value=_price_ceiling, value=_price_ceiling, step=5_000
+    )
 
 log_scale = st.sidebar.checkbox("Log price scale on distributions", value=True)
 

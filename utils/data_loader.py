@@ -108,6 +108,15 @@ def load_barrio_prefixes() -> list[str]:
 
 
 @st.cache_data(ttl=86_400, show_spinner=False)
+def load_max_price() -> int:
+    """Return the DB max price rounded up to the nearest $100,000."""
+    import math
+    r = get_client().from_(VIEW).select("price").order("price", desc=True).limit(1).execute()
+    raw = r.data[0]["price"] if r.data else 10_000_000
+    return math.ceil(raw / 100_000) * 100_000
+
+
+@st.cache_data(ttl=86_400, show_spinner=False)
 def load_available_years() -> list[int]:
     """Return sorted list of years present in last_seen_year."""
     r = get_client().from_(VIEW).select("last_seen_year").execute()
