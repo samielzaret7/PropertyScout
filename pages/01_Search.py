@@ -10,7 +10,6 @@ import streamlit as st
 from utils.data_loader import (
     load_barrio_prefixes,
     load_base_types,
-    load_max_price,
     load_properties,
     load_pueblos,
     load_regions,
@@ -23,7 +22,7 @@ from utils.formatting import (
     beds_label,
     fmt_price,
 )
-from utils.sidebar import render_year_filter
+from utils.sidebar import render_price_filter, render_year_filter
 
 # ---------------------------------------------------------------------------
 # Page config
@@ -79,17 +78,7 @@ selected_statuses = st.sidebar.multiselect(
 
 st.sidebar.markdown("---")
 
-_price_ceiling = load_max_price()
-st.sidebar.markdown("**Price Range (USD)**")
-_pcol1, _pcol2 = st.sidebar.columns(2)
-with _pcol1:
-    price_min = _pcol1.number_input(
-        "Min ($)", min_value=0, max_value=_price_ceiling, value=0, step=5_000
-    )
-with _pcol2:
-    price_max = _pcol2.number_input(
-        "Max ($)", min_value=0, max_value=_price_ceiling, value=_price_ceiling, step=5_000
-    )
+price_min, price_max = render_price_filter()
 
 st.sidebar.markdown("---")
 
