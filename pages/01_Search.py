@@ -120,6 +120,7 @@ st.sidebar.markdown("---")
 hide_optioned = st.sidebar.checkbox("Hide properties under contract", value=False)
 fsbo_only = st.sidebar.checkbox("FSBO only (No broker)", value=False)
 price_drops_only = st.sidebar.checkbox("💰 Price drops only", value=False)
+price_increases_only = st.sidebar.checkbox("📈 Price increases only", value=False)
 
 # Global year filter
 selected_year = render_year_filter()
@@ -147,26 +148,47 @@ with st.spinner("Querying listings…"):
         year=selected_year,
     )
 
-# Client-side price-drop filter (boolean column)
-if price_drops_only and not df.empty:
-    df = df[df["price_changed"] == True].reset_index(drop=True)
+# Client-side price-change filters
+if (price_drops_only or price_increases_only) and not df.empty:
+    if price_drops_only and price_increases_only:
+        # Both checked → show any price change
+        df = df[df["price_changed"] == True].reset_index(drop=True)
+    elif price_drops_only:
+        df = df[(df["price_changed"] == True) & (df["price_change_pct"] < 0)].reset_index(drop=True)
+    else:
+        df = df[(df["price_changed"] == True) & (df["price_change_pct"] > 0)].reset_index(drop=True)
 
 # ---------------------------------------------------------------------------
 # Header + view toggle
 # ---------------------------------------------------------------------------
 st.title("Property Search")
 
-col_count, col_toggle = st.columns([3, 1])
+# Persist view mode across page navigations; default = Cards
+if "view_mode" not in st.session_state:
+    st.session_state["view_mode"] = "Cards"
+
+col_count, col_cards, col_table = st.columns([4, 1, 1])
 with col_count:
     year_label = str(selected_year) if selected_year else "All Years"
     st.markdown(f"**{len(df):,} listing{'s' if len(df) != 1 else ''} found** · {year_label}")
-with col_toggle:
-    view_mode = st.radio(
-        "View",
-        options=["Table", "Cards"],
-        horizontal=True,
-        label_visibility="collapsed",
-    )
+with col_cards:
+    if st.button(
+        "🃏  Cards",
+        use_container_width=True,
+        type="primary" if st.session_state["view_mode"] == "Cards" else "secondary",
+    ):
+        st.session_state["view_mode"] = "Cards"
+        st.rerun()
+with col_table:
+    if st.button(
+        "📋  Table",
+        use_container_width=True,
+        type="primary" if st.session_state["view_mode"] == "Table" else "secondary",
+    ):
+        st.session_state["view_mode"] = "Table"
+        st.rerun()
+
+view_mode = st.session_state["view_mode"]
 
 if df.empty:
     st.info("No listings match the selected filters. Try broadening your search.")
