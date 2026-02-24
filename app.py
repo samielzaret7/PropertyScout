@@ -21,7 +21,7 @@ from utils.formatting import (
     fmt_price,
     fmt_pct,
 )
-from utils.sidebar import render_year_filter
+from utils.sidebar import render_broker_filter, render_year_filter
 
 # ---------------------------------------------------------------------------
 # Page config
@@ -48,6 +48,8 @@ selected_regions = st.sidebar.multiselect(
 )
 regions_key = tuple(sorted(selected_regions))
 
+brokers_key = render_broker_filter()
+
 # Global year filter (shared across all pages via session_state)
 selected_year = render_year_filter()
 
@@ -70,7 +72,7 @@ st.caption(
 # KPI cards
 # ---------------------------------------------------------------------------
 with st.spinner("Loading market data…"):
-    kpis = load_kpi_summary(regions=regions_key, year=selected_year)
+    kpis = load_kpi_summary(regions=regions_key, year=selected_year, brokers=brokers_key)
 
 if not kpis:
     st.warning("No listings found for the selected filters.")
@@ -92,7 +94,7 @@ col_left, col_right = st.columns(2)
 
 with col_left:
     st.subheader("Listings by Region")
-    df_region = load_counts_by_region(regions=regions_key, year=selected_year)
+    df_region = load_counts_by_region(regions=regions_key, year=selected_year, brokers=brokers_key)
     if not df_region.empty:
         fig = px.bar(
             df_region.sort_values("count", ascending=True),
@@ -110,7 +112,7 @@ with col_left:
 
 with col_right:
     st.subheader("Listings by Property Type")
-    df_type = load_counts_by_type(regions=regions_key, year=selected_year)
+    df_type = load_counts_by_type(regions=regions_key, year=selected_year, brokers=brokers_key)
     if not df_type.empty:
         fig2 = px.bar(
             df_type.sort_values("count", ascending=True),
@@ -137,7 +139,7 @@ col_left2, col_right2 = st.columns([1, 2])
 
 with col_left2:
     st.subheader("Listing Status")
-    df_status = load_status_breakdown(regions=regions_key, year=selected_year)
+    df_status = load_status_breakdown(regions=regions_key, year=selected_year, brokers=brokers_key)
     if not df_status.empty:
         df_status["label"] = df_status["listing_status"].map(LISTING_STATUS_LABELS)
         fig3 = px.pie(
@@ -153,7 +155,7 @@ with col_left2:
 
 with col_right2:
     st.subheader("Top 10 Most Active Brokers")
-    df_brokers = load_top_brokers(regions=regions_key, year=selected_year)
+    df_brokers = load_top_brokers(regions=regions_key, year=selected_year, brokers=brokers_key)
     if not df_brokers.empty:
         df_brokers.columns = ["Broker", "Listings"]
         df_brokers = df_brokers.reset_index(drop=True)

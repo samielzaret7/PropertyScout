@@ -22,7 +22,7 @@ from utils.formatting import (
     beds_label,
     fmt_price,
 )
-from utils.sidebar import render_price_filter, render_year_filter
+from utils.sidebar import render_broker_filter, render_price_filter, render_year_filter
 
 # ---------------------------------------------------------------------------
 # Page config
@@ -48,6 +48,7 @@ selected_regions = st.sidebar.multiselect(
     placeholder="All regions",
 )
 regions_key = tuple(sorted(selected_regions))
+brokers_key = render_broker_filter()
 
 # Dynamic municipality list filtered by selected regions
 all_pueblos = load_pueblos(regions=regions_key if regions_key else None)
@@ -139,6 +140,7 @@ with st.spinner("Querying listings…"):
         hide_optioned=hide_optioned,
         fsbo_only=fsbo_only,
         year=selected_year,
+        brokers=brokers_key,
     )
 
 # Client-side price-change filters

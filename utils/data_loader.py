@@ -108,6 +108,13 @@ def load_barrio_prefixes() -> list[str]:
 
 
 @st.cache_data(ttl=86_400, show_spinner=False)
+def load_brokers() -> list[str]:
+    """Return sorted list of unique broker names, excluding FSBO ('No Broker')."""
+    r = get_client().from_(VIEW).select("broker").execute()
+    return sorted({row["broker"] for row in r.data if row["broker"] and row["broker"] != "No Broker"})
+
+
+@st.cache_data(ttl=86_400, show_spinner=False)
 def load_max_price() -> int:
     """Return the DB max price rounded up to the nearest $100,000."""
     import math
@@ -146,6 +153,7 @@ def load_properties(
     hide_optioned: bool = False,
     fsbo_only: bool = False,
     year: int | None = None,
+    brokers: tuple[str, ...] = (),
 ) -> pd.DataFrame:
     """Return a DataFrame matching all active filters."""
     q = get_client().from_(VIEW).select(BASE_COLS)
@@ -160,6 +168,8 @@ def load_properties(
         q = q.in_("pueblo", list(pueblos))
     if barrio_prefixes:
         q = q.in_("barrio_prefix", list(barrio_prefixes))
+    if brokers:
+        q = q.in_("broker", list(brokers))
 
     q = q.gte("price", price_min).lte("price", price_max)
 
@@ -186,9 +196,11 @@ def load_properties(
 
 
 @st.cache_data(ttl=3_600, show_spinner=False)
-def load_kpi_summary(regions: tuple[str, ...] = (), year: int | None = None) -> dict:
+def load_kpi_summary(
+    regions: tuple[str, ...] = (), year: int | None = None, brokers: tuple[str, ...] = ()
+) -> dict:
     """Return top-level KPI numbers."""
-    df = load_properties(regions=regions, year=year)
+    df = load_properties(regions=regions, year=year, brokers=brokers)
     if df.empty:
         return {}
     return {
@@ -201,32 +213,40 @@ def load_kpi_summary(regions: tuple[str, ...] = (), year: int | None = None) -> 
 
 
 @st.cache_data(ttl=3_600, show_spinner=False)
-def load_counts_by_region(regions: tuple[str, ...] = (), year: int | None = None) -> pd.DataFrame:
-    df = load_properties(regions=regions, year=year)
+def load_counts_by_region(
+    regions: tuple[str, ...] = (), year: int | None = None, brokers: tuple[str, ...] = ()
+) -> pd.DataFrame:
+    df = load_properties(regions=regions, year=year, brokers=brokers)
     if df.empty:
         return pd.DataFrame()
     return df.groupby("region_clean").size().reset_index(name="count")
 
 
 @st.cache_data(ttl=3_600, show_spinner=False)
-def load_counts_by_type(regions: tuple[str, ...] = (), year: int | None = None) -> pd.DataFrame:
-    df = load_properties(regions=regions, year=year)
+def load_counts_by_type(
+    regions: tuple[str, ...] = (), year: int | None = None, brokers: tuple[str, ...] = ()
+) -> pd.DataFrame:
+    df = load_properties(regions=regions, year=year, brokers=brokers)
     if df.empty:
         return pd.DataFrame()
     return df.groupby("base_type").size().reset_index(name="count").sort_values("count", ascending=False)
 
 
 @st.cache_data(ttl=3_600, show_spinner=False)
-def load_status_breakdown(regions: tuple[str, ...] = (), year: int | None = None) -> pd.DataFrame:
-    df = load_properties(regions=regions, year=year)
+def load_status_breakdown(
+    regions: tuple[str, ...] = (), year: int | None = None, brokers: tuple[str, ...] = ()
+) -> pd.DataFrame:
+    df = load_properties(regions=regions, year=year, brokers=brokers)
     if df.empty:
         return pd.DataFrame()
     return df.groupby("listing_status").size().reset_index(name="count")
 
 
 @st.cache_data(ttl=3_600, show_spinner=False)
-def load_top_brokers(regions: tuple[str, ...] = (), year: int | None = None, top_n: int = 10) -> pd.DataFrame:
-    df = load_properties(regions=regions, year=year)
+def load_top_brokers(
+    regions: tuple[str, ...] = (), year: int | None = None, top_n: int = 10, brokers: tuple[str, ...] = ()
+) -> pd.DataFrame:
+    df = load_properties(regions=regions, year=year, brokers=brokers)
     if df.empty:
         return pd.DataFrame()
     df = df[~df["is_fsbo"]]  # exclude FSBO for broker ranking

@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import streamlit as st
 
-from utils.data_loader import load_available_years, load_max_price
+from utils.data_loader import load_available_years, load_brokers, load_max_price
 
 _DEFAULT_YEAR = 2026
 
@@ -100,3 +100,20 @@ def render_price_filter() -> tuple[int, int]:
         )
 
     return int(st.session_state["_pmin"]), int(st.session_state["_pmax"])
+
+
+def render_broker_filter() -> tuple[str, ...]:
+    """
+    Render the global Broker multiselect in the sidebar.
+    Uses a shared session_state key so the selection persists across all pages.
+    Returns a tuple of selected broker names (empty tuple = all brokers).
+    """
+    all_brokers = load_brokers()
+    st.sidebar.multiselect(
+        "Broker",
+        options=all_brokers,
+        default=[],
+        placeholder="All brokers",
+        key="_broker_filter",
+    )
+    return tuple(sorted(st.session_state.get("_broker_filter", [])))

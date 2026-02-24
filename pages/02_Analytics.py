@@ -15,7 +15,7 @@ from utils.formatting import (
     REGION_LABELS,
     fmt_price,
 )
-from utils.sidebar import render_price_filter, render_year_filter
+from utils.sidebar import render_broker_filter, render_price_filter, render_year_filter
 
 # ---------------------------------------------------------------------------
 # Page config
@@ -41,6 +41,7 @@ selected_regions = st.sidebar.multiselect(
     placeholder="All regions",
 )
 regions_key = tuple(sorted(selected_regions))
+brokers_key = render_broker_filter()
 
 all_types = load_base_types()
 selected_types = st.sidebar.multiselect(
@@ -71,6 +72,7 @@ with st.spinner("Loading analytics data…"):
         price_min=float(price_min),
         price_max=float(price_max),
         year=selected_year,
+        brokers=brokers_key,
     )
 
 year_label = str(selected_year) if selected_year else "All Years"
