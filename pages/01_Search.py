@@ -376,15 +376,20 @@ else:
                     first = prop.get("first_seen")
                     last = prop.get("last_seen")
                     days = prop.get("days_tracked")
-                    timing_parts = []
+                    timing_lines = []
                     if first:
-                        timing_parts.append(f"First: {first}")
+                        timing_lines.append(f"🗓 First seen: &nbsp;<b>{first}</b>")
                     if last:
-                        timing_parts.append(f"Last: {last}")
+                        timing_lines.append(f"🕒 Last seen: &nbsp;&nbsp;<b>{last}</b>")
                     if days is not None:
-                        timing_parts.append(f"{int(days)}d on market")
-                    if timing_parts:
-                        st.caption("🕒 " + " · ".join(timing_parts))
+                        timing_lines.append(f"📅 Days on market: <b>{int(days)}d</b>")
+                    if timing_lines:
+                        st.markdown(
+                            "<small style='color:gray;line-height:2'>"
+                            + "<br>".join(timing_lines)
+                            + "</small>",
+                            unsafe_allow_html=True,
+                        )
 
                     if prop.get("link"):
                         st.link_button("View listing →", prop["link"])
