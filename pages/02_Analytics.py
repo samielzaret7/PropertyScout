@@ -51,7 +51,7 @@ selected_types = st.sidebar.multiselect(
     placeholder="All types",
 )
 
-price_min, price_max = render_price_filter()
+price_min, price_max = render_price_filter(page="analytics")
 
 log_scale = st.sidebar.checkbox("Log price scale on distributions", value=True)
 

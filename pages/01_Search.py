@@ -79,7 +79,7 @@ selected_statuses = st.sidebar.multiselect(
 
 st.sidebar.markdown("---")
 
-price_min, price_max = render_price_filter()
+price_min, price_max = render_price_filter(page="search")
 
 st.sidebar.markdown("---")
 

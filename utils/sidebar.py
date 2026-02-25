@@ -47,59 +47,67 @@ def render_year_filter() -> int | None:
     return None if selected_label == "All years" else int(selected_label)
 
 
-def render_price_filter() -> tuple[int, int]:
+def render_price_filter(page: str = "default") -> tuple[int, int]:
     """
     Render a synchronised price-range slider + Min/Max number inputs.
-    Shared session_state keys mean the selection persists when navigating
-    between Search and Analytics pages.
-    Returns (price_min, price_max) as integers.
+    Each page passes a unique `page` identifier so filters are independent
+    across pages (no cross-page contamination via shared session_state keys).
+    Returns (price_min, price_max) as integers, always with min <= max.
     """
     ceiling = load_max_price()
 
-    # Initialise shared state once per browser session
-    if "_price_slider" not in st.session_state:
-        st.session_state["_price_slider"] = (0, ceiling)
-    if "_pmin" not in st.session_state:
-        st.session_state["_pmin"] = 0
-    if "_pmax" not in st.session_state:
-        st.session_state["_pmax"] = ceiling
+    min_key    = f"_pmin_{page}"
+    max_key    = f"_pmax_{page}"
+    slider_key = f"_slider_{page}"
+
+    # Initialise once per browser session
+    if min_key    not in st.session_state:
+        st.session_state[min_key]    = 0
+    if max_key    not in st.session_state:
+        st.session_state[max_key]    = ceiling
+    if slider_key not in st.session_state:
+        st.session_state[slider_key] = (0, ceiling)
 
     def _on_slider():
-        lo, hi = st.session_state["_price_slider"]
-        st.session_state["_pmin"] = lo
-        st.session_state["_pmax"] = hi
+        lo, hi = st.session_state[slider_key]
+        st.session_state[min_key] = lo
+        st.session_state[max_key] = hi
 
     def _on_min():
-        lo = int(st.session_state["_pmin"])
-        hi = int(st.session_state["_pmax"])
-        st.session_state["_price_slider"] = (min(lo, hi), hi)
+        lo = int(st.session_state[min_key])
+        hi = int(st.session_state[max_key])
+        lo = min(lo, hi)                        # clamp so min never exceeds max
+        st.session_state[min_key]    = lo
+        st.session_state[slider_key] = (lo, hi)
 
     def _on_max():
-        lo = int(st.session_state["_pmin"])
-        hi = int(st.session_state["_pmax"])
-        st.session_state["_price_slider"] = (lo, max(lo, hi))
+        lo = int(st.session_state[min_key])
+        hi = int(st.session_state[max_key])
+        hi = max(lo, hi)                        # clamp so max never falls below min
+        st.session_state[max_key]    = hi
+        st.session_state[slider_key] = (lo, hi)
 
     st.sidebar.markdown("**Price Range (USD)**")
     st.sidebar.slider(
         "Price Range",
         min_value=0, max_value=ceiling,
         step=5_000, format="$%d",
-        key="_price_slider", on_change=_on_slider,
+        key=slider_key, on_change=_on_slider,
         label_visibility="collapsed",
     )
     _c1, _c2 = st.sidebar.columns(2)
     with _c1:
         _c1.number_input(
             "Min ($)", min_value=0, max_value=ceiling,
-            step=5_000, key="_pmin", on_change=_on_min,
+            step=5_000, key=min_key, on_change=_on_min,
         )
     with _c2:
         _c2.number_input(
             "Max ($)", min_value=0, max_value=ceiling,
-            step=5_000, key="_pmax", on_change=_on_max,
+            step=5_000, key=max_key, on_change=_on_max,
         )
 
-    return int(st.session_state["_pmin"]), int(st.session_state["_pmax"])
+    return int(st.session_state[min_key]), int(st.session_state[max_key])
 
 
 def render_broker_filter() -> tuple[str, ...]:
