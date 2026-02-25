@@ -244,7 +244,8 @@ if view_mode == "Table":
     display = page_df[[
         "piclink", "title", "price", "base_type", "listing_status",
         "pueblo", "region_clean", "bedrooms_int", "bathrooms_int",
-        "price_changed", "price_change_pct", "last_seen", "broker", "link",
+        "price_changed", "price_change_pct",
+        "first_seen", "last_seen", "days_tracked", "broker", "link",
     ]].copy()
 
     display["price_fmt"] = display["price"].apply(fmt_price)
@@ -274,7 +275,9 @@ if view_mode == "Table":
         "bedrooms_int": "Beds",
         "bathrooms_int": "Baths",
         "price_changed": "Drop",
+        "first_seen": "First Seen",
         "last_seen": "Last Seen",
+        "days_tracked": "Days on Market",
         "broker": "Broker",
         "link": "Link",
     })
@@ -289,7 +292,9 @@ if view_mode == "Table":
             "Photo": st.column_config.ImageColumn("Photo", width="small"),
             "Title": st.column_config.TextColumn("Title", width="large"),
             "Link": st.column_config.LinkColumn("Link", display_text="View →"),
+            "First Seen": st.column_config.DateColumn("First Seen", format="MMM D, YYYY"),
             "Last Seen": st.column_config.DateColumn("Last Seen", format="MMM D, YYYY"),
+            "Days on Market": st.column_config.NumberColumn("Days on Market", format="%d d"),
         },
         hide_index=True,
     )
@@ -367,9 +372,19 @@ else:
                     elif prop.get("broker"):
                         st.caption(f"🏢 {prop['broker']}")
 
-                    # Last seen date
-                    if prop.get("last_seen"):
-                        st.caption(f"🕒 Last seen: {prop['last_seen']}")
+                    # Market timing
+                    first = prop.get("first_seen")
+                    last = prop.get("last_seen")
+                    days = prop.get("days_tracked")
+                    timing_parts = []
+                    if first:
+                        timing_parts.append(f"First: {first}")
+                    if last:
+                        timing_parts.append(f"Last: {last}")
+                    if days is not None:
+                        timing_parts.append(f"{int(days)}d on market")
+                    if timing_parts:
+                        st.caption("🕒 " + " · ".join(timing_parts))
 
                     if prop.get("link"):
                         st.link_button("View listing →", prop["link"])
