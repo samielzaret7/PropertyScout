@@ -35,46 +35,102 @@ st.set_page_config(
 )
 
 # ---------------------------------------------------------------------------
+# Persistent filter state
+# Non-widget "_ss_*" keys survive page navigation (Streamlit never GC's them).
+# Widget "_sw_*" keys are re-seeded from storage on first render after nav.
+# ---------------------------------------------------------------------------
+_SEARCH_DEFAULTS: dict = {
+    "_ss_regions":        [],
+    "_ss_pueblos":        [],
+    "_ss_types":          [],
+    "_ss_statuses":       [],
+    "_ss_min_beds_idx":   0,
+    "_ss_min_baths_idx":  0,
+    "_ss_prefixes":       [],
+    "_ss_hide_optioned":  False,
+    "_ss_fsbo_only":      False,
+    "_ss_price_drops":    False,
+    "_ss_price_increases": False,
+}
+for _k, _v in _SEARCH_DEFAULTS.items():
+    if _k not in st.session_state:
+        st.session_state[_k] = _v
+
+
+def _seed(wkey: str, skey: str) -> None:
+    """Restore widget key from storage when returning to this page."""
+    if wkey not in st.session_state:
+        st.session_state[wkey] = st.session_state[skey]
+
+
+def _save(wkey: str, skey: str) -> None:
+    """on_change: copy widget value into persistent storage."""
+    st.session_state[skey] = st.session_state[wkey]
+
+
+# ---------------------------------------------------------------------------
 # Sidebar filters
 # ---------------------------------------------------------------------------
 st.sidebar.title("🔍 Search Filters")
 
 all_regions = load_regions()
+_seed("_sw_regions", "_ss_regions")
+
+
+def _on_regions() -> None:
+    _save("_sw_regions", "_ss_regions")
+    # Region changed → saved pueblos are no longer valid, clear them
+    st.session_state["_ss_pueblos"] = []
+    st.session_state.pop("_sw_pueblos", None)
+
+
 selected_regions = st.sidebar.multiselect(
     "Region",
     options=all_regions,
-    default=[],
     format_func=lambda r: REGION_LABELS.get(r, r.title()),
     placeholder="All regions",
+    key="_sw_regions",
+    on_change=_on_regions,
 )
 regions_key = tuple(sorted(selected_regions))
 brokers_key = render_broker_filter()
 
 # Dynamic municipality list filtered by selected regions
 all_pueblos = load_pueblos(regions=regions_key if regions_key else None)
+_seed("_sw_pueblos", "_ss_pueblos")
+# Drop any saved pueblos that are no longer valid for the current region
+_valid_pueblos = set(all_pueblos)
+st.session_state["_sw_pueblos"] = [
+    p for p in st.session_state["_sw_pueblos"] if p in _valid_pueblos
+]
 selected_pueblos = st.sidebar.multiselect(
     "Municipality (Pueblo)",
     options=all_pueblos,
-    default=[],
     placeholder="All municipalities",
+    key="_sw_pueblos",
+    on_change=lambda: _save("_sw_pueblos", "_ss_pueblos"),
 )
 
 st.sidebar.markdown("---")
 
 all_types = load_base_types()
+_seed("_sw_types", "_ss_types")
 selected_types = st.sidebar.multiselect(
     "Property Type",
     options=all_types,
-    default=[],
     placeholder="All types",
+    key="_sw_types",
+    on_change=lambda: _save("_sw_types", "_ss_types"),
 )
 
+_seed("_sw_statuses", "_ss_statuses")
 selected_statuses = st.sidebar.multiselect(
     "Listing Status",
     options=list(LISTING_STATUS_LABELS.keys()),
-    default=[],
     format_func=lambda s: LISTING_STATUS_LABELS[s],
     placeholder="All statuses",
+    key="_sw_statuses",
+    on_change=lambda: _save("_sw_statuses", "_ss_statuses"),
 )
 
 st.sidebar.markdown("---")
@@ -83,38 +139,64 @@ price_min, price_max = render_price_filter(page="search")
 
 st.sidebar.markdown("---")
 
+_seed("_sw_min_beds_idx", "_ss_min_beds_idx")
 min_beds_idx = st.sidebar.selectbox(
     "Min Bedrooms",
     options=range(len(BEDROOMS_OPTIONS)),
     format_func=lambda i: BEDROOMS_OPTIONS[i][1],
-    index=0,
+    key="_sw_min_beds_idx",
+    on_change=lambda: _save("_sw_min_beds_idx", "_ss_min_beds_idx"),
 )
 min_beds = BEDROOMS_OPTIONS[min_beds_idx][0]
 
+_seed("_sw_min_baths_idx", "_ss_min_baths_idx")
 min_baths_idx = st.sidebar.selectbox(
     "Min Bathrooms",
     options=range(len(BATHROOMS_OPTIONS)),
     format_func=lambda i: BATHROOMS_OPTIONS[i][1],
-    index=0,
+    key="_sw_min_baths_idx",
+    on_change=lambda: _save("_sw_min_baths_idx", "_ss_min_baths_idx"),
 )
 min_baths = BATHROOMS_OPTIONS[min_baths_idx][0]
 
 st.sidebar.markdown("---")
 
 all_prefixes = load_barrio_prefixes()
+_seed("_sw_prefixes", "_ss_prefixes")
 selected_prefixes = st.sidebar.multiselect(
     "Neighbourhood Type",
     options=all_prefixes,
-    default=[],
     placeholder="All types",
+    key="_sw_prefixes",
+    on_change=lambda: _save("_sw_prefixes", "_ss_prefixes"),
 )
 
 st.sidebar.markdown("---")
 
-hide_optioned = st.sidebar.checkbox("Hide properties under contract", value=False)
-fsbo_only = st.sidebar.checkbox("FSBO only (No broker)", value=False)
-price_drops_only = st.sidebar.checkbox("💰 Price drops only", value=False)
-price_increases_only = st.sidebar.checkbox("📈 Price increases only", value=False)
+_seed("_sw_hide_optioned", "_ss_hide_optioned")
+hide_optioned = st.sidebar.checkbox(
+    "Hide properties under contract",
+    key="_sw_hide_optioned",
+    on_change=lambda: _save("_sw_hide_optioned", "_ss_hide_optioned"),
+)
+_seed("_sw_fsbo_only", "_ss_fsbo_only")
+fsbo_only = st.sidebar.checkbox(
+    "FSBO only (No broker)",
+    key="_sw_fsbo_only",
+    on_change=lambda: _save("_sw_fsbo_only", "_ss_fsbo_only"),
+)
+_seed("_sw_price_drops", "_ss_price_drops")
+price_drops_only = st.sidebar.checkbox(
+    "💰 Price drops only",
+    key="_sw_price_drops",
+    on_change=lambda: _save("_sw_price_drops", "_ss_price_drops"),
+)
+_seed("_sw_price_increases", "_ss_price_increases")
+price_increases_only = st.sidebar.checkbox(
+    "📈 Price increases only",
+    key="_sw_price_increases",
+    on_change=lambda: _save("_sw_price_increases", "_ss_price_increases"),
+)
 
 # Global year filter
 selected_year = render_year_filter()

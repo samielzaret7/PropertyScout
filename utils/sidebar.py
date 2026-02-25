@@ -50,42 +50,64 @@ def render_year_filter() -> int | None:
 def render_price_filter(page: str = "default") -> tuple[int, int]:
     """
     Render a synchronised price-range slider + Min/Max number inputs.
-    Each page passes a unique `page` identifier so filters are independent
-    across pages (no cross-page contamination via shared session_state keys).
-    Returns (price_min, price_max) as integers, always with min <= max.
+    Each page passes a unique `page` identifier so filters are independent.
+
+    Persistence across page navigation works via non-widget storage keys
+    (_stored_pmin_<page> / _stored_pmax_<page>).  Streamlit garbage-collects
+    widget keys when the widget isn't rendered (i.e. on another page), but it
+    never clears plain session_state entries, so we store intent there and
+    re-seed the widget keys on first render after navigation.
     """
     ceiling = load_max_price()
 
+    # Plain session_state (non-widget) — survives page navigation
+    store_min  = f"_stored_pmin_{page}"
+    store_max  = f"_stored_pmax_{page}"
+
+    # Widget keys — may be cleared by Streamlit when page is not active
     min_key    = f"_pmin_{page}"
     max_key    = f"_pmax_{page}"
     slider_key = f"_slider_{page}"
 
-    # Initialise once per browser session
-    if min_key    not in st.session_state:
-        st.session_state[min_key]    = 0
-    if max_key    not in st.session_state:
-        st.session_state[max_key]    = ceiling
+    # Initialise persistent storage once per browser session
+    if store_min not in st.session_state:
+        st.session_state[store_min] = 0
+    if store_max not in st.session_state:
+        st.session_state[store_max] = ceiling
+
+    # Re-seed widget keys from storage when returning to this page
+    if min_key not in st.session_state:
+        st.session_state[min_key] = st.session_state[store_min]
+    if max_key not in st.session_state:
+        st.session_state[max_key] = st.session_state[store_max]
     if slider_key not in st.session_state:
-        st.session_state[slider_key] = (0, ceiling)
+        st.session_state[slider_key] = (
+            st.session_state[store_min],
+            st.session_state[store_max],
+        )
 
     def _on_slider():
         lo, hi = st.session_state[slider_key]
-        st.session_state[min_key] = lo
-        st.session_state[max_key] = hi
+        st.session_state[min_key]   = lo
+        st.session_state[max_key]   = hi
+        st.session_state[store_min] = lo
+        st.session_state[store_max] = hi
 
     def _on_min():
         lo = int(st.session_state[min_key])
         hi = int(st.session_state[max_key])
-        lo = min(lo, hi)                        # clamp so min never exceeds max
+        lo = min(lo, hi)
         st.session_state[min_key]    = lo
         st.session_state[slider_key] = (lo, hi)
+        st.session_state[store_min]  = lo
 
     def _on_max():
         lo = int(st.session_state[min_key])
         hi = int(st.session_state[max_key])
-        hi = max(lo, hi)                        # clamp so max never falls below min
+        hi = max(lo, hi)
         st.session_state[max_key]    = hi
         st.session_state[slider_key] = (lo, hi)
+        st.session_state[store_max]  = hi
 
     st.sidebar.markdown("**Price Range (USD)**")
     st.sidebar.slider(
@@ -107,7 +129,7 @@ def render_price_filter(page: str = "default") -> tuple[int, int]:
             step=5_000, key=max_key, on_change=_on_max,
         )
 
-    return int(st.session_state[min_key]), int(st.session_state[max_key])
+    return int(st.session_state[store_min]), int(st.session_state[store_max])
 
 
 def render_broker_filter() -> tuple[str, ...]:
