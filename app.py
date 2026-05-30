@@ -11,7 +11,6 @@ from utils.data_loader import (
     load_counts_by_region,
     load_counts_by_type,
     load_kpi_summary,
-    load_last_updated,
     load_regions,
     load_status_breakdown,
     load_top_brokers,
@@ -19,11 +18,10 @@ from utils.data_loader import (
 from utils.formatting import (
     LISTING_STATUS_LABELS,
     REGION_COLORS,
-    fmt_date,
     fmt_price,
     fmt_pct,
 )
-from utils.sidebar import render_broker_filter, render_year_filter
+from utils.sidebar import render_broker_filter, render_last_updated, render_year_filter
 
 # ---------------------------------------------------------------------------
 # Page config
@@ -39,6 +37,7 @@ st.set_page_config(
 # Sidebar
 # ---------------------------------------------------------------------------
 st.sidebar.title("🏡 PropertyScout PR")
+render_last_updated()
 st.sidebar.subheader("Filter by Region")
 
 all_regions = load_regions()
@@ -69,10 +68,6 @@ st.caption(
     "Data sourced from clasificadosonline.com · "
     "Use the **Search** and **Analytics** pages for detailed exploration."
 )
-
-last_updated = load_last_updated()
-if last_updated:
-    st.caption(f"🕒 Data last updated: **{fmt_date(last_updated)}**")
 
 # ---------------------------------------------------------------------------
 # KPI cards

@@ -22,7 +22,12 @@ from utils.formatting import (
     beds_label,
     fmt_price,
 )
-from utils.sidebar import render_broker_filter, render_price_filter, render_year_filter
+from utils.sidebar import (
+    render_broker_filter,
+    render_last_updated,
+    render_price_filter,
+    render_year_filter,
+)
 
 # ---------------------------------------------------------------------------
 # Page config
@@ -72,6 +77,7 @@ def _save(wkey: str, skey: str) -> None:
 # Sidebar filters
 # ---------------------------------------------------------------------------
 st.sidebar.title("🔍 Search Filters")
+render_last_updated()
 
 all_regions = load_regions()
 _seed("_sw_regions", "_ss_regions")

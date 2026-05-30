@@ -15,7 +15,12 @@ from utils.formatting import (
     REGION_LABELS,
     fmt_price,
 )
-from utils.sidebar import render_broker_filter, render_price_filter, render_year_filter
+from utils.sidebar import (
+    render_broker_filter,
+    render_last_updated,
+    render_price_filter,
+    render_year_filter,
+)
 
 # ---------------------------------------------------------------------------
 # Page config
@@ -31,6 +36,7 @@ st.set_page_config(
 # Sidebar filters
 # ---------------------------------------------------------------------------
 st.sidebar.title("📊 Analytics Filters")
+render_last_updated()
 
 all_regions = load_regions()
 selected_regions = st.sidebar.multiselect(

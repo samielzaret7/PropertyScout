@@ -6,9 +6,22 @@ from __future__ import annotations
 
 import streamlit as st
 
-from utils.data_loader import load_available_years, load_brokers, load_max_price
+from utils.data_loader import (
+    load_available_years,
+    load_brokers,
+    load_last_updated,
+    load_max_price,
+)
+from utils.formatting import fmt_date
 
 _DEFAULT_YEAR = 2026
+
+
+def render_last_updated() -> None:
+    """Render the data-freshness caption in the sidebar (shown on every page)."""
+    last_updated = load_last_updated()
+    if last_updated:
+        st.sidebar.caption(f"🕒 Data last updated: {fmt_date(last_updated)}")
 
 
 def render_year_filter() -> int | None:
