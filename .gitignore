@@ -9,3 +9,6 @@ __pycache__/
 *.png
 *.jpg
 *.jpeg
+
+# Claude Code config
+.claude/
