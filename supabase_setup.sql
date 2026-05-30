@@ -96,20 +96,40 @@ FROM properties p;
 
 
 -- ---------------------------------------------------------------------------
--- 3. (Optional) Enable Row Level Security on properties table
---    Required if you want the anon/publishable key to access it safely.
+-- 3. Row Level Security — REQUIRED for the public anon/publishable key to read data
+--    Without a read policy on `properties`, the anon key returns ZERO rows (no
+--    error), which surfaces in the dashboard as
+--    "No listings found for the selected filters."
+--
+--    Why `properties` and not `properties_enriched`?  The dashboard reads the
+--    `properties_enriched` VIEW, but a view stores no data — it reads the
+--    underlying `properties` TABLE at query time, and RLS policies attach to
+--    tables, not views.  With `security_invoker = on` the view runs as the
+--    caller (anon), so the policy on `properties` is what governs access.
+--    The service_role key bypasses RLS, so this gap is invisible if you ever
+--    test locally with that key.
+--    Run this block in the Supabase SQL Editor.
 -- ---------------------------------------------------------------------------
--- ALTER TABLE properties ENABLE ROW LEVEL SECURITY;
---
--- CREATE POLICY "Allow public read" ON properties
---   FOR SELECT
---   USING (true);
---
--- Repeat for municipios:
+
+-- Make the view run with the *caller's* privileges so the policy below applies
+-- to it (and to silence Supabase's "security definer view" linter warning).
+ALTER VIEW properties_enriched SET (security_invoker = on);
+
+-- properties: enable RLS + allow public (read-only) SELECT  ← fixes "No listings found"
+ALTER TABLE properties ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public read access" ON properties;
+CREATE POLICY "Public read access" ON properties
+  FOR SELECT
+  TO anon, authenticated
+  USING (true);
+
+-- municipios: OPTIONAL — the current dashboard never queries this table and the
+-- view doesn't join it. Add this only if you later expose municipios to the app.
 -- ALTER TABLE municipios ENABLE ROW LEVEL SECURITY;
---
--- CREATE POLICY "Allow public read" ON municipios
+-- DROP POLICY IF EXISTS "Public read access" ON municipios;
+-- CREATE POLICY "Public read access" ON municipios
 --   FOR SELECT
+--   TO anon, authenticated
 --   USING (true);
 
 

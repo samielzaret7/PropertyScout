@@ -123,6 +123,25 @@ def load_max_price() -> int:
     return math.ceil(raw / 100_000) * 100_000
 
 
+@st.cache_data(ttl=3_600, show_spinner=False)
+def load_last_updated() -> str | None:
+    """Return the most recent last_seen date across all listings (data freshness).
+
+    The scraper stamps last_seen on every run, so MAX(last_seen) is the best
+    signal for 'when was the data last refreshed'. Returns an ISO date string
+    (e.g. '2026-02-25') or None if the table is empty / unreachable.
+    """
+    r = (
+        get_client()
+        .from_(VIEW)
+        .select("last_seen")
+        .order("last_seen", desc=True)
+        .limit(1)
+        .execute()
+    )
+    return r.data[0]["last_seen"] if r.data else None
+
+
 @st.cache_data(ttl=86_400, show_spinner=False)
 def load_available_years() -> list[int]:
     """Return sorted list of years present in last_seen_year."""

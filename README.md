@@ -1,8 +1,10 @@
 # PropertyScout PR
 
+**🔗 Live app: [propertyscoutpr.streamlit.app](https://propertyscoutpr.streamlit.app/)**
+
 A Streamlit dashboard for exploring the Puerto Rico real estate market. Browse thousands of property listings scraped from clasificadosonline.com, filter by region, price, type, and more, and track market trends with interactive analytics.
 
-> **Live data** refreshes hourly via an automated scraper pipeline (see [Clasificados-Online-Real-Estate-Scraper](https://github.com/samielzaret7/Clasificados-Online-Real-Estate-Scraper)).
+> **Data** is sourced from clasificadosonline.com via an automated scraper pipeline (see [Clasificados-Online-Real-Estate-Scraper](https://github.com/samielzaret7/Clasificados-Online-Real-Estate-Scraper)).
 
 ## Features
 

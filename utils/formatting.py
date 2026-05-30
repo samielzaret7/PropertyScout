@@ -18,6 +18,18 @@ def fmt_pct(value: float | None, decimals: int = 1) -> str:
     return f"{value:.{decimals}f}%"
 
 
+def fmt_date(value) -> str:
+    """Format an ISO date/timestamp string as 'Feb 25, 2026'."""
+    if not value:
+        return "N/A"
+    import pandas as pd
+
+    ts = pd.to_datetime(value, errors="coerce")
+    if pd.isna(ts):
+        return str(value)
+    return ts.strftime("%b %d, %Y")
+
+
 # Human-readable labels for internal enum values
 LISTING_STATUS_LABELS = {
     "standard": "Standard",
